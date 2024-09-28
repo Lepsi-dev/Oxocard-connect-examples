@@ -1,0 +1,5 @@
+This is a small example how to use a GY-521 Gyroscop sensor with Oxocard Connect and breadbard card.
+Look at the image how to wire the sensor on the breadboard.
+In a small video you can see how it works.
+After a few movemants it is necessary to recalibrate the sensor. You can hit the midddle button to do so.
+Press the down button to exist the program.
