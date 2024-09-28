@@ -1,3 +1,3 @@
 Collection of examples with oxocard connect.
 
-1. connect to GY-521 Gyroscp with breadboard card
+1. connect to GY-521 Gyroscope sensor with breadboard card
