@@ -1,0 +1,50 @@
+MPU = 0x68
+mydata:int[14]
+gyro_x:long
+gyro_y:long
+gyro_z:long
+gyro_x_angel:float = 0
+gyro_y_angel:float = 0
+gyro_z_angel:float = 0
+
+writeI2CByte(MPU, 0x6B, 0)
+
+def onDraw():
+    
+# Daten lesen
+	readI2C(MPU, 0x3B, 14)
+	for i in 14
+		mydata[i] = getI2CByte()
+	
+# Werte speichern
+	accelerometer_x = (mydata[0]<<8) | mydata[1]
+	accelerometer_y = (mydata[2]<<8) | mydata[3]
+	accelerometer_z = (mydata[4]<<8) | mydata[5]
+	temperature = ((mydata[6]<<8) | mydata[7])/340.00+36.53
+	gyro_x = (mydata[8]<<8) | mydata[9]
+	gyro_y = (mydata[10]<<8) | mydata[11]
+	gyro_z = (mydata[12]<<8) | mydata[13]
+
+# Winkel addieren
+	gyro_x_angel += gyro_x
+    gyro_y_angel += gyro_y
+    gyro_z_angel += gyro_z
+    
+# Neigung zeichnen
+	clear()
+	drawLine( 120, 120, 120 - gyro_y_angel/500, 120) 
+	drawLine( 120, 120, 120, 120 - gyro_x_angel/500)
+	fill( 255, 0, 0)
+	drawCircle( 120  - gyro_y_angel/500, 120 - gyro_x_angel/500, abs(gyro_z_angel)/2000 + 3)
+	update()
+	
+# Neu kalibrieren
+	if getButton() == 1 
+		gyro_x_angel = 0
+		gyro_y_angel = 0
+		gyro_z_angel = 0
+	if getButton() == 4
+		exit
+# Kurz warten
+   delay(20)
+
