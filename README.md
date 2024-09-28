@@ -1,1 +1,3 @@
-Collection of examples with oxocard connect
+Collection of examples with oxocard connect.
+
+1. connect to GY-521 Gyroscp with breadboard card
