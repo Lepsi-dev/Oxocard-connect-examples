@@ -1,0 +1,6 @@
+This is a small example how to use a AHT20 Temperature and Humidity sensor with Oxocard Connect and breadbard card.
+Look at the image how to wire the sensor on the breadboard.
+The code show also how to connect to a i2c device without having the library for easy use. The sensor have no register, so the first byte of a command is put 
+into the register parameter (this took some days to find this simple workarround)
+The sensor itsself also contain a bmp280 sensor for pressure and additionaal temperature. I tried also to get these data, but currently with unsatisfactory results.
+Press the down button to exist the program.
