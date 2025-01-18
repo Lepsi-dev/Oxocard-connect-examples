@@ -1,0 +1,159 @@
+#------------------------------------------------------------------------------------
+# 
+# DHT20/AHT20 simple Oxocard example
+#
+# AHT20: temperature & humidity sensor with I2C protocol
+# datasheet:  https://asairsensors.com/wp-content/uploads/2021/09/Data-Sheet-AHT20-Humidity-and-Temperature-Sensor-ASAIR-V1.0.03.pdf
+#
+#
+# used sensor for testing: "Aht20 Bmp280 sensor"
+#
+# adapted libraries for Arduino
+# AHT20 - https://github.com/adafruit/Adafruit_AHTX0
+#
+# Author: Lepsi-dev
+# Version: 0.9 2025-01-18
+#
+#------------------------------------------------------------------------------------
+
+# AHT20 I2C addresses
+const AHTX0_I2CADDR_DEFAULT = 0x38   # AHT default i2c address
+const AHTX0_I2CADDR_ALTERNATE = 0x39 # AHT alternate i2c address
+
+# AHT20 commands
+const AHTX0_CMD_CALIBRATE = 0xE1     # Calibration command
+const AHTX0_CMD_TRIGGER = 0xAC       # Trigger reading command
+const AHTX0_CMD_SOFTRESET = 0xBA     # Soft reset command
+const AHTX0_CMD_INIT = 0xBE     	 # Init command
+
+# AHT20 status bit
+const AHTX0_STATUS_BUSY = 0x80       # Status bit for busy
+const AHTX0_STATUS_CALIBRATED = 0x08 # Status bit for calibrated
+
+# AHT20 variables
+aht20_exist:bool
+i2c_addr_aht20:byte
+
+class aht20_struct:
+	temperature:float
+	humidity:float
+
+#
+# Init the AHT20 sensor
+#
+def initAHT20():
+	# Check device ATH20
+	if checkI2CAddress(AHTX0_I2CADDR_DEFAULT)
+		i2c_addr_aht20 = AHTX0_I2CADDR_DEFAULT
+		print( "ATH20 default address: " + AHTX0_I2CADDR_DEFAULT )
+		aht20_exist = true
+	else if  checkI2CAddress(AHTX0_I2CADDR_ALTERNATE)
+		i2c_addr_aht20 = AHTX0_I2CADDR_ALTERNATE
+		print( "ATH20 alternate address: " + AHTX0_I2CADDR_ALTERNATE)
+		aht20_exist = true
+	else
+		print ( "ATH20 not found" )
+		aht20_exist = false
+	
+	# If AHT20 exist
+	if aht20_exist
+		# Soft Reset ATH20
+		delay(20)
+		writeI2CByte(i2c_addr_aht20, AHTX0_CMD_SOFTRESET, AHTX0_CMD_SOFTRESET)
+		delay(20)
+		while readI2CByte(i2c_addr_aht20, -1) & AHTX0_STATUS_BUSY 
+			delay(10)
+		print( "reset ok, Status= " + readI2CByte(i2c_addr_aht20, 0) )
+
+		# Init ATH20
+		cmd = [0x08, 0x00]
+		writeI2C( i2c_addr_aht20, AHTX0_CMD_INIT, 2, cmd )
+		while readI2CByte(i2c_addr_aht20, -1) & AHTX0_STATUS_BUSY 
+			delay(10)
+		print( "init ok, Status= " + readI2CByte(i2c_addr_aht20, -1))
+
+		# Calibrate ATH20
+		cmd = [0x08, 0x00]
+		writeI2C( i2c_addr_aht20, AHTX0_CMD_CALIBRATE, 2, cmd )
+		while readI2CByte(i2c_addr_aht20, -1) & AHTX0_STATUS_BUSY 
+			delay(10)
+		if readI2CByte(i2c_addr_aht20, -1) & AHTX0_STATUS_CALIBRATED
+			print( "calibration ok, Status= " +  readI2CByte(i2c_addr_aht20, -1))
+		else
+			print( "calibration failed")
+
+#
+# Read from AHT20
+#
+def getAHT20Values()->aht20_struct 
+	cmd:byte[3]
+	data:long[6]
+	myaht20:aht20_struct
+	temperature:float
+	t:long
+	h:long
+
+	# Request data
+	cmd = [0x33, 0]
+	writeI2C( i2c_addr_aht20, AHTX0_CMD_TRIGGER, 2, cmd )
+
+	# wait measure is finished
+	while readI2CByte(i2c_addr_aht20, -1) & AHTX0_STATUS_BUSY
+		delay(10)
+	
+	# read data
+	readI2C(i2c_addr_aht20,-1,6)
+	for i in 6
+		data[i] = getI2CByte()
+
+	# Calculate Temperature
+	t = data[3] & 0x0F
+	t = t<<8
+	t = t + data[4]
+	t = t<<8
+	t = t + data[5]
+	myaht20.temperature = 200* (t / 0x100000) - 50
+
+	# Calculate Humidity
+	h = (data[1]<<8) | data[2]
+	h = h<<4
+	h = h | (data[3]>>4)
+	myaht20.humidity = 100 * (h / 0x100000)
+	
+	return myaht20
+
+#
+# Setup the device
+#
+initAHT20()
+setPrecision(1)
+textAlignment(TEXT_ALIGN_CENTER)
+textFont(FONT_ROBOTO_48)
+
+#
+# Loop
+#
+def onDraw():
+	_aht20:aht20_struct
+
+	clear()
+	
+	# Check if AHT20 found
+	if aht20_exist
+		_aht20 = getAHT20Values()
+		print( "Hum=" + _aht20.humidity + " / Temp=" + _aht20.temperature  )
+		textFont(FONT_ROBOTO_24)
+		drawText(120,10,"Temperature")
+		textFont(FONT_ROBOTO_48)
+		drawText(120,50, _aht20.temperature + "°C")
+		textFont(FONT_ROBOTO_24)
+		drawText(120,120,"Humidity")
+		textFont(FONT_ROBOTO_48)
+		drawText(120,160,_aht20.humidity + "%")
+	else
+		print( "AHT20 not found" )
+		textFont(FONT_ROBOTO_48)
+		drawText(120,50,"No Sensor" )
+	
+	update()
+	delay(1000)
