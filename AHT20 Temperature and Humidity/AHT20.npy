@@ -156,4 +156,6 @@ def onDraw():
 		drawText(120,50,"No Sensor" )
 	
 	update()
+	if getButton() == 4
+		exit
 	delay(1000)
