@@ -12,6 +12,9 @@
 #
 # adapted libraries 
 #  - https://github.com/adafruit/Adafruit_CircuitPython_BMP280/blob/main/adafruit_bmp280.py
+#    (float algorithm)
+#  - https://github.com/adafruit/Adafruit_BMP280_Library
+#    (shift-bit algorithm)
 #
 # Author: Lepsi-dev
 # Version: 0.8 2025-01-21
@@ -236,7 +239,7 @@ def getMeasure_bit()->measure
 	return _m
 
 #
-# Get a single measure with float algorythm 
+# Get a single measure with float algorithm 
 #
 def getMeasure_float()->measure
 	_m:measure
