@@ -1,0 +1,5 @@
+This is a small example how to use a BMP280 pressure and temperature sensor with Oxocard Connect and breadbard card.
+Look at the image how to wire the sensor on the breadboard.
+The code show also how to connect to a i2c device without having the library for easy use. 
+The code contaions two algorithm to calculate the values. In my opinion bit shift-bit algorithm get better values. 
+I'm not sure, if really correct, butt better than with the floating algorithm. It's possible, that there is already a failure in there.
