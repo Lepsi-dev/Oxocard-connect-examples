@@ -14,7 +14,7 @@
 #  - https://github.com/adafruit/Adafruit_CircuitPython_BMP280/blob/main/adafruit_bmp280.py
 #
 # Author: Lepsi-dev
-# Version: 0.8 2025-01-19
+# Version: 0.8 2025-01-21
 #
 #------------------------------------------------------------------------------------
 
@@ -169,9 +169,9 @@ def initBMP280():
 		writeI2CByte( i2c_addr_bmp280, BMP280_REGISTER_CONTROL, control)
 
 #
-# Get a single measure
+# Get a single measure with shift bit algorithm (maybe better results)
 #
-def getMeasure()->measure
+def getMeasure_bit()->measure
 	_m:measure
 	var1:float
 	var2:float
@@ -203,12 +203,6 @@ def getMeasure()->measure
 	adc_T = ((rawTemperature[0] << 16) + (rawTemperature[1] << 8) + (rawTemperature[2]))>>4
 	#print( "ADC_T= "  + byteToHex(rawTemperature[0]) + byteToHex(rawTemperature[1])+byteToHex(rawTemperature[2]))
     
-	## Calculate t_fine with float algorithm
-	#var1 = (adc_T / 16384.0 - calib.dig_T1 / 1024.0) * calib.dig_T2
-	#var2 = adc_T / 131072.0 - calib.dig_T1 / 8192.0
-    #var2 = var2 * var2 * calib.dig_T3
-    #t_fine = var1 + var2
-
 	# Calculate t_fine with bin operations
 	var1 = shiftR( (shiftR(adc_T,3) - shiftL(calib.dig_T1,1))*calib.dig_T2,11)
 	var2 = shiftR( shiftR((shiftR(adc_T,4) - calib.dig_T1)*(shiftR(adc_T,4) - calib.dig_T1),12)*calib.dig_T3,14)
@@ -221,23 +215,6 @@ def getMeasure()->measure
 	adc_P = (rawPressure[0] << 12) + (rawPressure[1] << 4) + (rawPressure[2]>>4)  
 	#print( "ADC_P= " + byteToHex(rawPressure[0])+byteToHex(rawPressure[1])+byteToHex(rawPressure[2]))
     
-	## Calculate pressure with float algorithm
-	#pvar1 = t_fine / 2 - 64000.0
-	#pvar2 = pvar1 * pvar1 * calib.dig_P6 / 32768.0
-	#pvar2 = pvar2 + pvar1 * calib.dig_P5 * 2.0
-	#pvar2 = pvar2 / 4 + calib.dig_P4 * 65536.0
-	#pvar1 = (calib.dig_P3 * pvar1 * pvar1 / 524288.0 + calib.dig_P2 * pvar1) / 524288.0
-	#pvar1 = (1+ pvar1 / 32768.0) * calib.dig_P1
-	## avoid div by zero
-	#if pvar1 == 0 
-	#    _m.pressure = 0
-    #		return _m
-	#p = 1048576.0 - adc_P
-	#p = (p - pvar2 / 4096.0) * 6250.0 / pvar1
-	#pvar1 = calib.dig_P9 * p * p / 2147483648.0
-	#pvar2 = p * calib.dig_P8 / 32768.0
-	#p = p + (pvar1 + pvar2 + calib.dig_P7) / 16.0
-	
 	# calculate pressure with bin operations
 	pvar1 = t_fine - 128000
 	pvar2 = pvar1 * pvar1 * calib.dig_P6
@@ -259,6 +236,74 @@ def getMeasure()->measure
 	return _m
 
 #
+# Get a single measure with float algorythm 
+#
+def getMeasure_float()->measure
+	_m:measure
+	var1:float
+	var2:float
+	pvar1:float
+	pvar2:float
+	adc_T:long
+	adc_P:long
+	t_fine:float
+	p:float
+	rawPressure:long[3]
+	rawTemperature:long[3]
+
+	# check status, avoid read during coversion is running
+	while readI2CByte(i2c_addr_bmp280, BMP280_REGISTER_STATUS) & 0x08
+		delay(20)
+	# Read Raw Data Pressure
+	readI2C(i2c_addr_bmp280, BMP280_REGISTER_PRESSUREDATA, 3)
+	for i in 3
+		rawPressure[i]= getI2CByte()
+	# check status, avoid read during coversion is running
+	while readI2CByte(i2c_addr_bmp280, BMP280_REGISTER_STATUS) & 0x08
+		delay(20)
+	# Read Raw Data Temperature
+	readI2C(i2c_addr_bmp280, BMP280_REGISTER_TEMPDATA, 3)
+	for i in 3
+		rawTemperature[i] = getI2CByte()
+	
+	# build raw temperature
+	adc_T = ((rawTemperature[0] << 16) + (rawTemperature[1] << 8) + (rawTemperature[2]))>>4
+	#print( "ADC_T= "  + byteToHex(rawTemperature[0]) + byteToHex(rawTemperature[1])+byteToHex(rawTemperature[2]))
+    
+	# Calculate t_fine with float algorithm
+	var1 = (adc_T / 16384.0 - calib.dig_T1 / 1024.0) * calib.dig_T2
+	var2 = adc_T / 131072.0 - calib.dig_T1 / 8192.0
+    var2 = var2 * var2 * calib.dig_T3
+    t_fine = var1 + var2
+	
+	# Calculate Temperature
+	_m.temperature= t_fine / 5120.0
+
+	# build raw pressure
+	adc_P = (rawPressure[0] << 12) + (rawPressure[1] << 4) + (rawPressure[2]>>4)  
+	#print( "ADC_P= " + byteToHex(rawPressure[0])+byteToHex(rawPressure[1])+byteToHex(rawPressure[2]))
+    
+	# Calculate pressure with float algorithm
+	pvar1 = t_fine / 2 - 64000.0
+	pvar2 = pvar1 * pvar1 * calib.dig_P6 / 32768.0
+	pvar2 = pvar2 + pvar1 * calib.dig_P5 * 2.0
+	pvar2 = pvar2 / 4 + calib.dig_P4 * 65536.0
+	pvar1 = (calib.dig_P3 * pvar1 * pvar1 / 524288.0 + calib.dig_P2 * pvar1) / 524288.0
+	pvar1 = (1+ pvar1 / 32768.0) * calib.dig_P1
+	# avoid div by zero
+	if pvar1 == 0 
+	    _m.pressure = 0
+    	return _m
+	p = 1048576.0 - adc_P
+	p = (p - pvar2 / 4096.0) * 6250.0 / pvar1
+	pvar1 = calib.dig_P9 * p * p / 2147483648.0
+	pvar2 = p * calib.dig_P8 / 32768.0
+	p = p + (pvar1 + pvar2 + calib.dig_P7) / 16.0
+	
+	_m.pressure = p / 100.0
+	return _m
+
+#
 # Setup the devices
 #
 initBMP280()
@@ -272,7 +317,7 @@ def onDraw():
 
 	clear()
 	if bmp280_exist
-		_m=getMeasure()
+		_m=getMeasure_bit()
 		print( "Pressure=" + _m.pressure + " / Temp=" + _m.temperature  )
 		textFont(FONT_ROBOTO_24)
 		drawText(120,10,"Pressure")
