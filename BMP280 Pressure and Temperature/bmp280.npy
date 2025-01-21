@@ -1,0 +1,294 @@
+#------------------------------------------------------------------------------------
+# 
+# BMP280 simple Oxocard example
+#
+#------------------------------------------------------------------------------------
+#
+# BPM280: pressure sensor with I2C protocol
+# used sensor for testing: "Aht20 Bmp280 sensor"
+#
+# datasheet: 
+#  - https://cdn-shop.adafruit.com/datasheets/BST-BMP280-DS001-11.pdf
+#
+# adapted libraries 
+#  - https://github.com/adafruit/Adafruit_CircuitPython_BMP280/blob/main/adafruit_bmp280.py
+#
+# Author: Lepsi-dev
+# Version: 0.8 2025-01-19
+#
+#------------------------------------------------------------------------------------
+
+# BMP280 I22C addresses
+const BMP280_I2CADDR_DEFAULT = 0x76
+const BMP280_I2CADDR_ALTERNATE = 0x77
+
+# Registers available on the sensor
+const BMP280_REGISTER_DIG_T1 = 0x88
+const BMP280_REGISTER_DIG_T2 = 0x8A
+const BMP280_REGISTER_DIG_T3 = 0x8C
+const BMP280_REGISTER_DIG_P1 = 0x8E
+const BMP280_REGISTER_DIG_P2 = 0x90
+const BMP280_REGISTER_DIG_P3 = 0x92
+const BMP280_REGISTER_DIG_P4 = 0x94
+const BMP280_REGISTER_DIG_P5 = 0x96
+const BMP280_REGISTER_DIG_P6 = 0x98
+const BMP280_REGISTER_DIG_P7 = 0x9A
+const BMP280_REGISTER_DIG_P8 = 0x9C
+const BMP280_REGISTER_DIG_P9 = 0x9E
+#const BMP280_REGISTER_CHIPID = 0xD0
+#const BMP280_REGISTER_VERSION = 0xD1
+const BMP280_REGISTER_SOFTRESET = 0xE0
+#const BMP280_REGISTER_CAL26 = 0xE1 # calibration = 0xE1-0xF0
+const BMP280_REGISTER_STATUS = 0xF3
+const BMP280_REGISTER_CONTROL = 0xF4
+const BMP280_REGISTER_CONFIG = 0xF5
+const BMP280_REGISTER_PRESSUREDATA = 0xF7
+const BMP280_REGISTER_TEMPDATA = 0xFA
+
+# Samling Mode settings
+const SAMPLING_NONE = 0x00
+const SAMPLING_X1 = 0x01
+const SAMPLING_X2 = 0x02
+const SAMPLING_X4 = 0x03
+const SAMPLING_X8 = 0x04
+const SAMPLING_X16 = 0x05
+
+# Operation mode settings
+const MODE_SLEEP = 0x00
+const MODE_FORCED = 0x01
+const MODE_NORMAL = 0x03
+const MODE_SOFT_RESET_CODE = 0xB6
+
+# Filter settings
+const FILTER_OFF = 0x00
+const FILTER_X2 = 0x01
+const FILTER_X4 = 0x02
+const FILTER_X8 = 0x03
+const FILTER_X16 = 0x04
+
+# Standby duration in ms settings
+const STANDBY_MS_1 = 0x00
+const STANDBY_MS_63 = 0x01
+const STANDBY_MS_125 = 0x02
+const STANDBY_MS_250 = 0x03
+const STANDBY_MS_500 = 0x04
+const STANDBY_MS_1000 = 0x05
+const STANDBY_MS_2000 = 0x06
+const STANDBY_MS_4000 = 0x07
+
+# struct to hold the predefined calibration data
+class calibration:
+	dig_T1:long # unsingned int
+	dig_T2:long
+	dig_T3:long
+	dig_P1:long # unsigned int
+	dig_P2:long
+	dig_P3:long
+	dig_P4:long
+	dig_P5:long
+	dig_P6:long
+	dig_P7:long
+	dig_P8:long
+	dig_P9:long
+
+# struct to transfer 2 values
+class measure:
+	temperature:float
+	pressure:float
+
+# BMP280 variables
+bmp280_exist:bool
+i2c_addr_bmp280:byte
+calib:calibration
+
+#
+# Shift Bits Left for emulating with float values
+#
+def shiftL( val:float, bit:int )->float:
+	return val*pow(2,bit)
+
+#
+# Shift Bits Right for emulating with float values
+#
+def shiftR( val:float, bit:int )->float:
+	return round(val/pow(2,bit))
+
+#
+#
+# Init the BMP280 sensor
+#
+def initBMP280():
+	unsigned:long
+	config:byte
+	control:byte
+
+	# Check device BMP280
+	if checkI2CAddress(BMP280_I2CADDR_DEFAULT)
+		i2c_addr_bmp280 = BMP280_I2CADDR_DEFAULT
+		print ( "BMP280 default address: " +  BMP280_I2CADDR_DEFAULT)
+		bmp280_exist=true
+	else if checkI2CAddress(BMP280_I2CADDR_ALTERNATE)
+		i2c_addr_bmp280 = BMP280_I2CADDR_ALTERNATE
+		print ( "BMP280 alternate address: " +  BMP280_I2CADDR_ALTERNATE)
+		bmp280_exist=true
+	else
+		print ( "IBPM280 not found" )
+		bmp280_exist=false
+
+	# if BMP280 exist
+	if bmp280_exist
+		# reset the device
+		writeI2CByte(i2c_addr_bmp280, BMP280_REGISTER_SOFTRESET, MODE_SOFT_RESET_CODE)
+		delay(500)
+	    # Read factory set coefficents
+		unsigned = readI2CInt(i2c_addr_bmp280, BMP280_REGISTER_DIG_T1)
+		if unsigned <0
+			calib.dig_T1 =  (unsigned & 0x7FFF) + 32768
+		else
+			calib.dig_T1 = unsigned
+		calib.dig_T2 = readI2CInt(i2c_addr_bmp280, BMP280_REGISTER_DIG_T2)
+		calib.dig_T3 = readI2CInt(i2c_addr_bmp280, BMP280_REGISTER_DIG_T3)
+		unsigned =  readI2CInt(i2c_addr_bmp280, BMP280_REGISTER_DIG_P1)
+		if unsigned < 0
+			calib.dig_P1 = (unsigned & 0x7FFF) + 32768
+		else
+			calib.dig_P1 = unsigned
+		calib.dig_P2 = readI2CInt(i2c_addr_bmp280, BMP280_REGISTER_DIG_P2)
+		calib.dig_P3 = readI2CInt(i2c_addr_bmp280, BMP280_REGISTER_DIG_P3)
+		calib.dig_P4 = readI2CInt(i2c_addr_bmp280, BMP280_REGISTER_DIG_P4)
+		calib.dig_P5 = readI2CInt(i2c_addr_bmp280, BMP280_REGISTER_DIG_P5)
+		calib.dig_P6 = readI2CInt(i2c_addr_bmp280, BMP280_REGISTER_DIG_P6)
+		calib.dig_P7 = readI2CInt(i2c_addr_bmp280, BMP280_REGISTER_DIG_P7)
+		calib.dig_P8 = readI2CInt(i2c_addr_bmp280, BMP280_REGISTER_DIG_P8)
+		calib.dig_P9 = readI2CInt(i2c_addr_bmp280, BMP280_REGISTER_DIG_P9)
+
+		# Set config & aata aquisitation options
+		config = (FILTER_X16<<2) | (STANDBY_MS_500<<5)
+		writeI2CByte( i2c_addr_bmp280, BMP280_REGISTER_CONFIG, config)
+		control = MODE_NORMAL | (SAMPLING_X8<<5) | (SAMPLING_X8 <<2)
+		writeI2CByte( i2c_addr_bmp280, BMP280_REGISTER_CONTROL, control)
+
+#
+# Get a single measure
+#
+def getMeasure()->measure
+	_m:measure
+	var1:float
+	var2:float
+	pvar1:float
+	pvar2:float
+	adc_T:long
+	adc_P:long
+	t_fine:float
+	p:float
+	rawPressure:long[3]
+	rawTemperature:long[3]
+
+	# check status, avoid read during coversion is running
+	while readI2CByte(i2c_addr_bmp280, BMP280_REGISTER_STATUS) & 0x08
+		delay(20)
+	# Read Raw Data Pressure
+	readI2C(i2c_addr_bmp280, BMP280_REGISTER_PRESSUREDATA, 3)
+	for i in 3
+		rawPressure[i]= getI2CByte()
+	# check status, avoid read during coversion is running
+	while readI2CByte(i2c_addr_bmp280, BMP280_REGISTER_STATUS) & 0x08
+		delay(20)
+	# Read Raw Data Temperature
+	readI2C(i2c_addr_bmp280, BMP280_REGISTER_TEMPDATA, 3)
+	for i in 3
+		rawTemperature[i] = getI2CByte()
+	
+	# build raw temperature
+	adc_T = ((rawTemperature[0] << 16) + (rawTemperature[1] << 8) + (rawTemperature[2]))>>4
+	#print( "ADC_T= "  + byteToHex(rawTemperature[0]) + byteToHex(rawTemperature[1])+byteToHex(rawTemperature[2]))
+    
+	## Calculate t_fine with float algorithm
+	#var1 = (adc_T / 16384.0 - calib.dig_T1 / 1024.0) * calib.dig_T2
+	#var2 = adc_T / 131072.0 - calib.dig_T1 / 8192.0
+    #var2 = var2 * var2 * calib.dig_T3
+    #t_fine = var1 + var2
+
+	# Calculate t_fine with bin operations
+	var1 = shiftR( (shiftR(adc_T,3) - shiftL(calib.dig_T1,1))*calib.dig_T2,11)
+	var2 = shiftR( shiftR((shiftR(adc_T,4) - calib.dig_T1)*(shiftR(adc_T,4) - calib.dig_T1),12)*calib.dig_T3,14)
+	t_fine = var1 + var2
+
+	# Calculate Temperature
+	_m.temperature= t_fine / 5120.0
+
+	# build raw pressure
+	adc_P = (rawPressure[0] << 12) + (rawPressure[1] << 4) + (rawPressure[2]>>4)  
+	#print( "ADC_P= " + byteToHex(rawPressure[0])+byteToHex(rawPressure[1])+byteToHex(rawPressure[2]))
+    
+	## Calculate pressure with float algorithm
+	#pvar1 = t_fine / 2 - 64000.0
+	#pvar2 = pvar1 * pvar1 * calib.dig_P6 / 32768.0
+	#pvar2 = pvar2 + pvar1 * calib.dig_P5 * 2.0
+	#pvar2 = pvar2 / 4 + calib.dig_P4 * 65536.0
+	#pvar1 = (calib.dig_P3 * pvar1 * pvar1 / 524288.0 + calib.dig_P2 * pvar1) / 524288.0
+	#pvar1 = (1+ pvar1 / 32768.0) * calib.dig_P1
+	## avoid div by zero
+	#if pvar1 == 0 
+	#    _m.pressure = 0
+    #		return _m
+	#p = 1048576.0 - adc_P
+	#p = (p - pvar2 / 4096.0) * 6250.0 / pvar1
+	#pvar1 = calib.dig_P9 * p * p / 2147483648.0
+	#pvar2 = p * calib.dig_P8 / 32768.0
+	#p = p + (pvar1 + pvar2 + calib.dig_P7) / 16.0
+	
+	# calculate pressure with bin operations
+	pvar1 = t_fine - 128000
+	pvar2 = pvar1 * pvar1 * calib.dig_P6
+	pvar2 = pvar2 + shiftL( pvar1 * calib.dig_P5, 17)
+	pvar2 = pvar2 + shiftL( calib.dig_P4,35 )
+	pvar1 = shiftR( pvar1 * pvar1 * calib.dig_P3, 8) + shiftL( pvar1 * calib.dig_P2, 12)
+	pvar1 = shiftR( shiftL(1, 47) * calib.dig_P1, 33)
+	if pvar1 == 0 
+	    _m.pressure = 0
+		return _m
+	p = 1048576 - adc_P
+	p = (shiftL(p,31) - pvar2) * 3125 / pvar1
+	pvar1 = shiftR( calib.dig_P9 * shiftR(p,13) * shiftR(p,13), 25)
+	pvar2 = shiftR( calib.dig_P8 * p, 19)
+	p = shiftR( p + pvar1 + pvar2,8) + shiftL(calib.dig_P7,4)
+	p = p / 256
+
+	_m.pressure = p / 100.0
+	return _m
+
+#
+# Setup the devices
+#
+initBMP280()
+textAlignment(TEXT_ALIGN_CENTER)
+
+#
+# Loop
+#
+def onDraw():
+	_m:measure
+
+	clear()
+	if bmp280_exist
+		_m=getMeasure()
+		print( "Pressure=" + _m.pressure + " / Temp=" + _m.temperature  )
+		textFont(FONT_ROBOTO_24)
+		drawText(120,10,"Pressure")
+		textFont(FONT_ROBOTO_48)
+		setPrecision(0)
+		drawText(120,50, _m.pressure   + "hPa")
+		textFont(FONT_ROBOTO_24)
+		drawText(120,120,"Temperature")
+		textFont(FONT_ROBOTO_48)
+		setPrecision(1)
+		drawText(120,160, _m.temperature + "°C")
+	else
+		print( "BMP280 not found" )
+
+	if getButton() == 4
+		exit
+	
+	update()
+	delay(1000)
