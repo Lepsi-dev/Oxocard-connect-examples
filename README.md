@@ -4,6 +4,8 @@ Collection of examples with oxocard connect.
 ## Connect to GY-521 Gyroscope sensor with breadboard card
 Simple example how to read the data from GY-521 via i2c protocol and how to handle the angle values
 
+https://github.com/Lepsi-dev/Oxocard-connect-examples/tree/main/Gyroskop
+
 <p align="center">
   <img src="https://github.com/Lepsi-dev/Oxocard-connect-examples/blob/main/Gyroskop/Oxocard-Gyroscope_small.jpg">
 </p>
