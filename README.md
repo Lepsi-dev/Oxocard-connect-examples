@@ -16,7 +16,7 @@ Simple example how to read the data from AHT20 via i2c protocol and show results
 </p>
 
 ## Connect to BMP280 pressure & temperature sensor with breadboard card
-Simple example that shows pressure and temperature on the internal screen. When you check the code, you will see that read the raw data is very easy but to calculate and calibrate the values is hard work. I tried out with an algorithm based on operations on float values and with an algorithm that shifts the bit to left and right up to 33 bits what's inpossible with 32bit long. So I created my own shift-bit-operations working with float values. This algorithm get better resault in my opinion - you can try both or find the failure in the floating algorithm.
+Simple example that shows pressure and temperature on the internal screen. When you check the code, you will see that read the raw data is very easy but to calculate and calibrate the values is hard work. I tried out with an algorithm based on operations with float values and with an algorithm that shifts the bit to left and right up to 33 bits what's inpossible with 32bit long datatype in NanoPy. So I created my own shift-bit-operations working with float values. This algorithm get better results in my opinion - you can try both or find the failure in the floating algorith (let me know)
 
 <p align="center">
   <img src="https://github.com/Lepsi-dev/Oxocard-connect-examples/blob/main/BMP280%20Pressure%20and%20Temperature/HowToWireBMP280_small.jpg">
