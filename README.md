@@ -1,11 +1,13 @@
 # Oxocard connect examples
 Collection of examples with oxocard connect.
 
+## MP3 Player built with Mini DF Player Chip
+
 ## Connect to GY-521 Gyroscope sensor with breadboard card
-[Simple example](https://github.com/Lepsi-dev/Oxocard-connect-examples/tree/main/Gyroskop) how to read the data from GY-521 via i2c protocol and how to handle the angle values
+[Simple example]([ttps://github.com/Lepsi-dev/Oxocard-connect-examples/tree/main/MP3%20Player) how to communicate with Mini DF Player with the UART protocol.
 
 <p align="center">
-  <img src="https://github.com/Lepsi-dev/Oxocard-connect-examples/blob/main/Gyroskop/Oxocard-Gyroscope_small.jpg">
+  <img src="https://github.com/Lepsi-dev/Oxocard-connect-examples/blob/main/MP3%20Player/mp3player_small.jpg">
 </p>
 
 ## Connect to AHT20 temperature & humidity sensor with breadboard card
