@@ -2,7 +2,7 @@
 Collection of examples with oxocard connect.
 
 ## MP3 Player built with Mini DF Player Chip
-[Simple example]([ttps://github.com/Lepsi-dev/Oxocard-connect-examples/tree/main/MP3%20Player) how to communicate with Mini DF Player with the UART protocol.
+[Simple example](https://github.com/Lepsi-dev/Oxocard-connect-examples/tree/main/MP3%20Player) how to communicate with Mini DF Player with the UART protocol.
 
 <p align="center">
   <img src="https://github.com/Lepsi-dev/Oxocard-connect-examples/blob/main/MP3%20Player/mp3player_small.jpg">
