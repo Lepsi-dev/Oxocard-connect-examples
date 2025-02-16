@@ -16,7 +16,6 @@ Collection of examples with oxocard connect.
 </p>
 
 ## Connect to AHT20 temperature & humidity sensor with breadboard card
-Simple example how to read the data from AHT20 via i2c protocol and show results on screen
 [Simple example](https://github.com/Lepsi-dev/Oxocard-connect-examples/tree/main/AHT20%20Temperature%20and%20Humidity) how to read the data from AHT20 via i2c protocol and show results on screen
 
 <p align="center">
