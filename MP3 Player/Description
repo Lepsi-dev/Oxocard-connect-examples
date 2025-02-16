@@ -1,0 +1,1 @@
+This example of a MP3 Player consist allo relevant commands for UART communication to the Mini DF Player. Some of the commands to read some state (getXXX) does not work properly, but the commands itself seemed to be ok.
