@@ -19,6 +19,7 @@
 command:byte[10] = [ 0x7E, 0xFF, 0x06, 0x00, 0x00    , 0x00, 0x00, 0x00, 0x00, 0xEF ]
 run = 0
 
+# calculate checksum for UART command
 def getCheckSum():
 	sum:long = 0
 	calc:int
@@ -31,7 +32,7 @@ def getCheckSum():
 	command[8] = (sum & 0x00FF) 
     
 
-
+# send UART command and receive answer if feedback is 1
 def sendCommand(cmd:byte,par1:byte,par2:byte, feedback:byte)->int:
     ret:byte[256]
 
@@ -124,19 +125,22 @@ def getFiles()->byte
 def getCurrentFile()->byte
 	return sendCommand(0x4B,0x00, 0x00, 0x01)
 
-# init
+# init UART
 initUART( C_PIN_02, C_PIN_01, 9600 )
 
+# init screen
 background(0,0,0)
 textAlignment(TEXT_ALIGN_CENTER)
 textFont(FONT_ROBOTO_BOLD_32)
 initGPIO(C_PIN_04, INPUT)
 
+# init MP3 player
 reset()
 delay(1000)
 setNormalMode()
 setVolume(15)
 
+# loop
 def onDraw():
 	clear()
 	noFill()
