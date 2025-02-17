@@ -11,7 +11,7 @@
 #
 #
 # Author: Lepsi-dev
-# Version: 0.8 2025-02-16
+# Version: 1.1 2025-02-17
 #
 #------------------------------------------------------------------------------------
 
@@ -151,19 +151,19 @@ def onDraw():
 		if run == 1
 			delay(500)
 			next()
-		drawText(120,120-15,">")
+		drawText(120,120-18,">")
 		if getButton() == 1
 			fill( 0x00, 0x00, 0xff)
 			drawCircle( 120, 120, 30)
-			drawText(120,120-15,">")
+			drawText(120,120-18,">")
 			run = 1
 			playback()
 	else 
-		drawText(120,120-15,"=")
+		drawText(120,120-18,"||")
 		if getButton() == 1
 			fill( 0x00, 0x00, 0xff)
 			drawCircle( 120, 120, 30)
-			drawText(120,120-15,"=")
+			drawText(120,120-18,"||")
 			run = 0
 			pause()
 	
@@ -187,10 +187,10 @@ def onDraw():
 		fill( 0x00, 0x00, 0xff)
 		drawCircle( 200, 120, 30)
 	
-	drawText( 120, 40-15, "+")
-	drawText( 120, 200-15,"-")
-	drawText( 40, 120-15, "<")
-	drawText( 200, 120-15, ">")
+	drawText( 120, 40-18, "+")
+	drawText( 120, 200-18,"-")
+	drawText( 40, 120-18, "<")
+	drawText( 200, 120-18, ">")
 	
 	update()
 	delay(200)
